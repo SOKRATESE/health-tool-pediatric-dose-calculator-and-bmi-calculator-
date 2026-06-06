@@ -172,71 +172,75 @@
       resultBox.innerHTML = `BMI: <strong>${bmi.toFixed(2)}</strong> — <strong>${category}</strong> <span class="pill">Height: ${height.toFixed(2)} m</span>`;
     });
 
-    document.getElementById('calcDoseBtn').addEventListener('click', async () => {
-      const drug = document.getElementById('drugName').value.trim();
-      const weight = parseFloat(document.getElementById('patientWeight').value);
-      const resultBox = document.getElementById('doseResult');
+ document.getElementById('calcDoseBtn').addEventListener('click', async () => {
+  const drug = document.getElementById('drugName').value.trim();
+  const weight = parseFloat(document.getElementById('patientWeight').value);
+  const resultBox = document.getElementById('doseResult');
 
-      if (!drug || !Number.isFinite(weight) || weight <= 0) {
-        resultBox.innerHTML = '<span class="warning">Please enter a drug name and a valid weight.</span>';
-        return;
-      }
+  if (!drug || !Number.isFinite(weight) || weight <= 0) {
+    resultBox.innerHTML = '<span class="warning">Please enter a drug name and a valid weight.</span>';
+    return;
+  }
 
-      try {
-        const response = await fetch('/data/drugs_example.csv');
-        if (!response.ok) throw new Error('CSV file not found');
-        const text = await response.text();
-        const rows = parseCsv(text);
+  try {
+    const response = await fetch('./data/drugs_example.csv');
+    if (!response.ok) throw new Error('CSV file not found');
 
-        if (rows.length < 2) throw new Error('No drug data available.');
+    const text = await response.text();
+    const rows = parseCsv(text);
 
-        const headers = rows[0];
-        const scored = rows.slice(1)
-  .map((row) => {
-    const obj = toObject(row, headers);
-    const distance = levenshtein(
-      drug.toLowerCase(),
-      obj.Drug.toLowerCase()
-    );
-    return { obj, distance };
-  })
-  .sort((a, b) => a.distance - b.distance);
+    if (rows.length < 2) throw new Error('No drug data available.');
 
-const bestMatch = scored[0];
+    const headers = rows[0];
 
-if (!bestMatch || bestMatch.distance > 3) {
-  resultBox.innerHTML =
-    '<span class="warning">No close match found. Please check spelling.</span>';
-  return;
-}
+    // --- FUZZY MATCHING ---
+    const scored = rows.slice(1)
+      .map((row) => {
+        const obj = toObject(row, headers);
+        const distance = levenshtein(
+          drug.toLowerCase(),
+          obj.Drug.toLowerCase()
+        );
+        return { obj, distance };
+      })
+      .sort((a, b) => a.distance - b.distance);
 
-const chosen = bestMatch.obj;
+    const bestMatch = scored[0];
 
-        if (!matches.length) {
-          resultBox.innerHTML = '<span class="warning">No matching drug was found in the sample dataset.</span>';
-          return;
-        }
+    if (!bestMatch || bestMatch.distance > 3) {
+      resultBox.innerHTML =
+        '<span class="warning">No close match found. Please check spelling.</span>';
+      return;
+    }
 
-        const chosen = matches[0];
-        const mgPerKg = parseFloat(chosen.mg_per_kg);
-        const minPerKg = chosen.min_mg_per_kg !== '' ? parseFloat(chosen.min_mg_per_kg) : null;
-        const maxPerKg = chosen.max_mg_per_kg !== '' ? parseFloat(chosen.max_mg_per_kg) : null;
-        const concentration = chosen.concentration_mg_per_ml !== '' ? parseFloat(chosen.concentration_mg_per_ml) : null;
+    const chosen = bestMatch.obj;
 
-        const lines = [
-          `Drug: ${chosen.Drug}`,
-          Number.isFinite(mgPerKg) ? `Dose: ${(mgPerKg * weight).toFixed(2)} mg` : 'Dose: range-based calculation',
-          minPerKg !== null && maxPerKg !== null ? `Range: ${(minPerKg * weight).toFixed(2)} – ${(maxPerKg * weight).toFixed(2)} mg` : '',
-          concentration !== null && Number.isFinite(mgPerKg) ? `Volume: ${((mgPerKg * weight) / concentration).toFixed(2)} mL` : '',
-          chosen.frequency ? `Frequency: ${chosen.frequency}` : '',
-          chosen.notes ? `Notes: ${chosen.notes}` : ''
-        ].filter(Boolean);
+    // Optional safety hint for close-but-not-perfect matches
+    let prefix = '';
+    if (bestMatch.distance > 1) {
+      prefix = `<span class="warning">Did you mean: ${chosen.Drug}?</span><br><br>`;
+    }
 
-        resultBox.innerHTML = lines.join('<br />');
-      } catch (error) {
-        resultBox.innerHTML = `<span class="warning">Request failed: ${error.message}</span>`;
-      }
-    });
+    const mgPerKg = parseFloat(chosen.mg_per_kg);
+    const minPerKg = chosen.min_mg_per_kg !== '' ? parseFloat(chosen.min_mg_per_kg) : null;
+    const maxPerKg = chosen.max_mg_per_kg !== '' ? parseFloat(chosen.max_mg_per_kg) : null;
+    const concentration = chosen.concentration_mg_per_ml !== '' ? parseFloat(chosen.concentration_mg_per_ml) : null;
+
+    const lines = [
+      `Drug: ${chosen.Drug}`,
+      Number.isFinite(mgPerKg) ? `Dose: ${(mgPerKg * weight).toFixed(2)} mg` : 'Dose: range-based calculation',
+      minPerKg !== null && maxPerKg !== null ? `Range: ${(minPerKg * weight).toFixed(2)} – ${(maxPerKg * weight).toFixed(2)} mg` : '',
+      concentration !== null && Number.isFinite(mgPerKg) ? `Volume: ${((mgPerKg * weight) / concentration).toFixed(2)} mL` : '',
+      chosen.frequency ? `Frequency: ${chosen.frequency}` : '',
+      chosen.notes ? `Notes: ${chosen.notes}` : ''
+    ].filter(Boolean);
+
+    resultBox.innerHTML = prefix + lines.join('<br />');
+
+  } catch (error) {
+    resultBox.innerHTML = `<span class="warning">Request failed: ${error.message}</span>`;
+  }
+});
   </script>
 </body>
 </html>
