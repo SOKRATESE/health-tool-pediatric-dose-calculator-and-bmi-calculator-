@@ -24,4 +24,28 @@ Phenobarbital,3,,,5,Anticonvulsant; long-term seizure control,Once or twice dail
 
 Oral Rehydration Solution,,,,"",ORS; for dehydration management,Frequent small sips
 Zinc,10,,,20,Diarrhea adjunct therapy (10–20 mg daily),Once daily
-
+Clindamycin,10,,,40,Severe anaerobic + skin infections,Every 8 hours
+Vancomycin,15,10,20,,Requires serum level monitoring,Every 6–8 hours
+Meropenem,20,,,40,Broad-spectrum severe infections,Every 8 hours
+Imipenem,15,,,25,Carbapenem antibiotic,Every 6–8 hours
+Piperacillin-Tazobactam,100,,,300,Severe hospital infections,Every 6–8 hours
+Ciprofloxacin,10,,,20,Reserved antibiotic; avoid routine pediatric use,Every 12 hours
+Doxycycline,2,,,4,Atypical infections (age-restricted),Every 12 hours
+Hydrocortisone,2,,,10,Adrenal insufficiency/stress dosing,Every 6–8 hours
+Adrenaline (Epinephrine),0.01,,,0.03,Anaphylaxis emergency use,As needed
+Atropine,0.02,,,0.05,Bradycardia/poisoning antidote,As needed
+Loratadine,0.2,,,0.5,Non-sedating antihistamine,Once daily
+Dextromethorphan,0.3,,,1.0,Cough suppressant (limited pediatric use),Every 6–8 hours
+Salbutamol (oral),0.1,,,0.15,Bronchodilator alternative route,Every 6–8 hours
+Isoniazid,10,,,15,TB treatment,Once daily
+Rifampicin,10,,,20,TB combination therapy,Once daily
+Pyrazinamide,20,,,35,TB intensive phase,Once daily
+Ethambutol,15,,,25,TB regimen component,Once daily
+Albendazole,10,,,15,Helminth infections,Single dose or repeat in 2 weeks
+Mebendazole,10,,,12,Anthelmintic,Single dose or short course
+Artemether-Lumefantrine,,,,"",Malaria ACT regimen,Per weight band
+Quinine,10,,,20,Severe malaria alternative therapy,Every 8 hours
+Folic Acid,0.1,,,0.5,Nutritional supplementation,Once daily
+Iron (elemental),3,,,6,Iron deficiency anemia,Once or twice daily
+Vitamin A,,,,"",Deficiency supplementation,Per age protocol
+Magnesium Sulfate,50,,,100,Seizures (eclampsia/neurology use),As needed
