@@ -22,10 +22,10 @@ Dexamethasone,0.15,,,0.6,Corticosteroid; croup/asthma,Every 6–24 hours
 Diazepam,0.2,,,0.5,Seizures/status epilepticus,As needed
 Phenobarbital,3,,,5,Anticonvulsant; long-term seizure control,Once or twice daily
 
-Oral Rehydration Solution,,,,"",ORS; for dehydration management,Frequent small sips
+Oral Rehydration Solution,,,,,"ORS; for dehydration management",Frequent small sips
 Zinc,10,,,20,Diarrhea adjunct therapy (10–20 mg daily),Once daily
 Clindamycin,10,,,40,Severe anaerobic + skin infections,Every 8 hours
-Vancomycin,15,10,20,,Requires serum level monitoring,Every 6–8 hours
+Vancomycin,15,10,15,,Requires serum level monitoring,Every 6–8 hours
 Meropenem,20,,,40,Broad-spectrum severe infections,Every 8 hours
 Imipenem,15,,,25,Carbapenem antibiotic,Every 6–8 hours
 Piperacillin-Tazobactam,100,,,300,Severe hospital infections,Every 6–8 hours
@@ -43,9 +43,9 @@ Pyrazinamide,20,,,35,TB intensive phase,Once daily
 Ethambutol,15,,,25,TB regimen component,Once daily
 Albendazole,10,,,15,Helminth infections,Single dose or repeat in 2 weeks
 Mebendazole,10,,,12,Anthelmintic,Single dose or short course
-Artemether-Lumefantrine,,,,"",Malaria ACT regimen,Per weight band
+Artemether-Lumefantrine,,,,"","Malaria ACT regimen",Per weight band
 Quinine,10,,,20,Severe malaria alternative therapy,Every 8 hours
 Folic Acid,0.1,,,0.5,Nutritional supplementation,Once daily
 Iron (elemental),3,,,6,Iron deficiency anemia,Once or twice daily
-Vitamin A,,,,"",Deficiency supplementation,Per age protocol
+Vitamin A,,,,,"Deficiency supplementation",Per age protocol
 Magnesium Sulfate,50,,,100,Seizures (eclampsia/neurology use),As needed
