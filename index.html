@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Health Tools Front End</title>
+  <style>
+    :root { color-scheme: dark; font-family: Arial, sans-serif; --bg:#07111f; --card:#101c2d; --line:#22344c; --accent:#5ddcff; --good:#63f2b1; --warn:#ffd06a; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; background:linear-gradient(135deg,#07111f 0%,#0f1f31 45%,#09111b 100%); color:#eff7ff; }
+    .page { max-width:1100px; margin:0 auto; padding:24px; }
+    header { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:24px; }
+    h1 { margin:0; font-size:clamp(2rem, 5vw, 2.8rem); }
+    p { color:#cfe6fb; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:20px; }
+    .card { background:rgba(16,28,45,0.95); border:1px solid var(--line); border-radius:20px; padding:18px; box-shadow:0 12px 24px rgba(0,0,0,.25); }
+    .card h2 { margin-top:0; font-size:1.15rem; }
+    label { display:block; font-size:.95rem; color:#d9ebff; margin-bottom:6px; }
+    input, button { width:100%; border-radius:12px; border:1px solid var(--line); background:#152636; color:#fff; padding:12px 14px; font-size:1rem; }
+    button { cursor:pointer; background:linear-gradient(135deg,#2da9ff,#6bbcff); color:#06263f; border:0; font-weight:700; transition:transform .08s ease; }
+    button:hover { transform:translateY(-1px); }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .muted { color:#b7cfeb; font-size:.95rem; }
+    .result-box { margin-top:12px; padding:12px; border-radius:14px; background:#0d1826; border:1px solid var(--line); min-height:52px; }
+    .pill { display:inline-block; padding:6px 10px; border-radius:999px; background:rgba(93,220,255,.12); color:var(--accent); font-size:.9rem; margin-top:6px; }
+    .badge { display:inline-block; font-weight:700; color:#07111f; background:var(--good); padding:6px 10px; border-radius:999px; font-size:.9rem; }
+    .warning { color:#ffd06a; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div>
+        <h1>Health Tools</h1>
+        <p>Simple front end for BMI and pediatric drug dosage calculations, hosted locally.</p>
+      </div>
+      <span class="badge">Live on localhost:8000</span>
+    </header>
+
+    <section class="grid">
+      <article class="card">
+        <h2>BMI Calculator</h2>
+        <p class="muted">Enter body weight and height to see your BMI category instantly.</p>
+        <div class="row">
+          <div>
+            <label for="weight">Weight (kg)</label>
+            <input id="weight" type="number" step="0.1" placeholder="e.g. 68" />
+          </div>
+          <div>
+            <label for="height">Height (m)</label>
+            <input id="height" type="number" step="0.01" placeholder="e.g. 1.75" />
+          </div>
+        </div>
+        <button id="calcBmiBtn" type="button">Calculate BMI</button>
+        <div class="result-box" id="bmiResult">Your BMI result will appear here.</div>
+      </article>
+
+      <article class="card">
+        <h2>Pediatric Drug Dose</h2>
+        <p class="muted">Use the sample drug table to estimate a dose for a patient weight.</p>
+        <label for="drugName">Drug name</label>
+        <input id="drugName" type="text" placeholder="Try Paracetamol or Ibuprofen" />
+        <div class="row" style="margin-top:12px;">
+          <div>
+            <label for="patientWeight">Weight (kg)</label>
+            <input id="patientWeight" type="number" step="0.1" placeholder="e.g. 12.5" />
+          </div>
+          <div>
+            <label for="patientName">Patient name</label>
+            <input id="patientName" type="text" placeholder="Optional" />
+          </div>
+        </div>
+        <button id="calcDoseBtn" type="button">Calculate Dose</button>
+        <div class="result-box" id="doseResult">Dose details will appear here.</div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    function bmiCategory(value) {
+      if (value < 18.5) return 'Underweight';
+      if (value < 25) return 'Normal weight';
+      if (value < 30) return 'Overweight';
+      return 'Obese';
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let current = '';
+      let row = [];
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i += 1) {
+        const char = text[i];
+        const next = text[i + 1];
+
+        if (char === '"') {
+          if (inQuotes && next === '"') {
+            current += '"';
+            i += 1;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          row.push(current);
+          current = '';
+        } else if ((char === '\n' || char === '\r') && !inQuotes) {
+          if (char === '\r' && text[i + 1] === '\n') i += 1;
+          if (current.length > 0 || row.length > 0) {
+            row.push(current);
+            rows.push(row);
+            row = [];
+            current = '';
+          }
+        } else {
+          current += char;
+        }
+      }
+
+      if (current.length > 0 || row.length > 0) {
+        row.push(current);
+        rows.push(row);
+      }
+
+      return rows;
+    }
+
+    function toObject(row, headers) {
+      return Object.fromEntries(headers.map((key, index) => [key.trim(), row[index] ?? '']));
+    }
+
+    document.getElementById('calcBmiBtn').addEventListener('click', () => {
+      const weight = parseFloat(document.getElementById('weight').value);
+      const height = parseFloat(document.getElementById('height').value);
+      const resultBox = document.getElementById('bmiResult');
+
+      if (!Number.isFinite(weight) || !Number.isFinite(height) || height <= 0) {
+        resultBox.innerHTML = '<span class="warning">Please enter valid weight and height values.</span>';
+        return;
+      }
+
+      const bmi = weight / (height * height);
+      const category = bmiCategory(bmi);
+      resultBox.innerHTML = `BMI: <strong>${bmi.toFixed(2)}</strong> — <strong>${category}</strong> <span class="pill">Height: ${height.toFixed(2)} m</span>`;
+    });
+
+    document.getElementById('calcDoseBtn').addEventListener('click', async () => {
+      const drug = document.getElementById('drugName').value.trim();
+      const weight = parseFloat(document.getElementById('patientWeight').value);
+      const resultBox = document.getElementById('doseResult');
+
+      if (!drug || !Number.isFinite(weight) || weight <= 0) {
+        resultBox.innerHTML = '<span class="warning">Please enter a drug name and a valid weight.</span>';
+        return;
+      }
+
+      try {
+        const response = await fetch('/data/drugs_example.csv');
+        if (!response.ok) throw new Error('CSV file not found');
+        const text = await response.text();
+        const rows = parseCsv(text);
+
+        if (rows.length < 2) throw new Error('No drug data available.');
+
+        const headers = rows[0];
+        const matches = rows.slice(1)
+          .map((row) => toObject(row, headers))
+          .filter((row) => row.Drug.toLowerCase().includes(drug.toLowerCase()));
+
+        if (!matches.length) {
+          resultBox.innerHTML = '<span class="warning">No matching drug was found in the sample dataset.</span>';
+          return;
+        }
+
+        const chosen = matches[0];
+        const mgPerKg = parseFloat(chosen.mg_per_kg);
+        const minPerKg = chosen.min_mg_per_kg !== '' ? parseFloat(chosen.min_mg_per_kg) : null;
+        const maxPerKg = chosen.max_mg_per_kg !== '' ? parseFloat(chosen.max_mg_per_kg) : null;
+        const concentration = chosen.concentration_mg_per_ml !== '' ? parseFloat(chosen.concentration_mg_per_ml) : null;
+
+        const lines = [
+          `Drug: ${chosen.Drug}`,
+          Number.isFinite(mgPerKg) ? `Dose: ${(mgPerKg * weight).toFixed(2)} mg` : 'Dose: range-based calculation',
+          minPerKg !== null && maxPerKg !== null ? `Range: ${(minPerKg * weight).toFixed(2)} – ${(maxPerKg * weight).toFixed(2)} mg` : '',
+          concentration !== null && Number.isFinite(mgPerKg) ? `Volume: ${((mgPerKg * weight) / concentration).toFixed(2)} mL` : '',
+          chosen.frequency ? `Frequency: ${chosen.frequency}` : '',
+          chosen.notes ? `Notes: ${chosen.notes}` : ''
+        ].filter(Boolean);
+
+        resultBox.innerHTML = lines.join('<br />');
+      } catch (error) {
+        resultBox.innerHTML = `<span class="warning">Request failed: ${error.message}</span>`;
+      }
+    });
+  </script>
+</body>
+</html>

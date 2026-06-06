@@ -1,0 +1,4 @@
+Drug,mg_per_kg,min_mg_per_kg,max_mg_per_kg,concentration_mg_per_ml,notes,frequency
+Paracetamol,15,,,24,Analgesic/antipyretic; typical 15 mg/kg per dose,Every 6 hours
+Ibuprofen,10,,,20,NSAID; typical 10 mg/kg per dose,Every 8 hours
+Amoxicillin,20,,,50,Antibiotic; typical 20 mg/kg/day (divide per regimen),Every 12 hours
