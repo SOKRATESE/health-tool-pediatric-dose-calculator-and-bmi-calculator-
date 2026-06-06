@@ -5,7 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Health Tools Front End</title>
   <style>
-    :root { color-scheme: dark; font-family: Arial, sans-serif; --bg:#07111f; --card:#101c2d; --line:#22344c; --accent:#5ddcff; --good:#63f2b1; --warn:#ffd06a; }
+    :root { 
+      color-scheme: dark; 
+      font-family: Arial, sans-serif; 
+      --bg:#07111f; 
+      --card:#101c2d; 
+      --line:#22344c; 
+      --accent:#5ddcff; 
+      --good:#63f2b1; 
+      --warn:#ffd06a; 
+    }
     * { box-sizing: border-box; }
     body { margin:0; min-height:100vh; background:linear-gradient(135deg,#07111f 0%,#0f1f31 45%,#09111b 100%); color:#eff7ff; }
     .page { max-width:1100px; margin:0 auto; padding:24px; }
@@ -17,14 +26,16 @@
     .card h2 { margin-top:0; font-size:1.15rem; }
     label { display:block; font-size:.95rem; color:#d9ebff; margin-bottom:6px; }
     input, button { width:100%; border-radius:12px; border:1px solid var(--line); background:#152636; color:#fff; padding:12px 14px; font-size:1rem; }
-    button { cursor:pointer; background:linear-gradient(135deg,#2da9ff,#6bbcff); color:#06263f; border:0; font-weight:700; transition:transform .08s ease; }
+    button { cursor:pointer; background:linear-gradient(135deg,#2da9ff,#6bbcff); color:#06263f; border:0; font-weight:700; transition:transform .08s ease, opacity .2s ease; }
     button:hover { transform:translateY(-1px); }
+    button:disabled { opacity:0.6; cursor:not-allowed; }
     .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
     .muted { color:#b7cfeb; font-size:.95rem; }
     .result-box { margin-top:12px; padding:12px; border-radius:14px; background:#0d1826; border:1px solid var(--line); min-height:52px; }
     .pill { display:inline-block; padding:6px 10px; border-radius:999px; background:rgba(93,220,255,.12); color:var(--accent); font-size:.9rem; margin-top:6px; }
     .badge { display:inline-block; font-weight:700; color:#07111f; background:var(--good); padding:6px 10px; border-radius:999px; font-size:.9rem; }
     .warning { color:#ffd06a; }
+    .success { color:var(--good); }
   </style>
 </head>
 <body>
@@ -77,6 +88,11 @@
   </main>
 
   <script>
+    /**
+     * Determines BMI category based on value
+     * @param {number} value - BMI value
+     * @returns {string} Category name
+     */
     function bmiCategory(value) {
       if (value < 18.5) return 'Underweight';
       if (value < 25) return 'Normal weight';
@@ -84,20 +100,27 @@
       return 'Obese';
     }
 
+    /**
+     * Parses CSV text into a 2D array
+     * Handles quoted fields and CRLF line endings
+     * @param {string} text - Raw CSV text
+     * @returns {Array<Array<string>>} Parsed rows
+     */
     function parseCsv(text) {
       const rows = [];
       let current = '';
       let row = [];
       let inQuotes = false;
 
-      for (let i = 0; i < text.length; i += 1) {
+      for (let i = 0; i < text.length; i++) {
         const char = text[i];
         const next = text[i + 1];
 
         if (char === '"') {
+          // Handle escaped quotes
           if (inQuotes && next === '"') {
             current += '"';
-            i += 1;
+            i++;
           } else {
             inQuotes = !inQuotes;
           }
@@ -105,7 +128,10 @@
           row.push(current);
           current = '';
         } else if ((char === '\n' || char === '\r') && !inQuotes) {
-          if (char === '\r' && text[i + 1] === '\n') i += 1;
+          // Handle CRLF and LF line endings
+          if (char === '\r' && next === '\n') {
+            i++;
+          }
           if (current.length > 0 || row.length > 0) {
             row.push(current);
             rows.push(row);
@@ -117,6 +143,7 @@
         }
       }
 
+      // Push remaining content
       if (current.length > 0 || row.length > 0) {
         row.push(current);
         rows.push(row);
@@ -125,122 +152,195 @@
       return rows;
     }
 
+    /**
+     * Converts a CSV row array to an object using headers
+     * @param {Array<string>} row - CSV row data
+     * @param {Array<string>} headers - Column headers
+     * @returns {Object} Row as key-value object
+     */
     function toObject(row, headers) {
-      return Object.fromEntries(headers.map((key, index) => [key.trim(), row[index] ?? '']));
+      return Object.fromEntries(
+        headers.map((key, index) => [key.trim(), (row[index] ?? '').trim()])
+      );
     }
 
-
+    /**
+     * Calculates Levenshtein distance between two strings
+     * Used for fuzzy matching of drug names
+     * @param {string} a - First string
+     * @param {string} b - Second string
+     * @returns {number} Edit distance
+     */
     function levenshtein(a, b) {
-  const matrix = [];
+      const matrix = [];
 
-  for (let i = 0; i <= b.length; i++) {
-    matrix[i] = [i];
-  }
-  for (let j = 0; j <= a.length; j++) {
-    matrix[0][j] = j;
-  }
-
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1
-        );
+      for (let i = 0; i <= b.length; i++) {
+        matrix[i] = [i];
       }
+      for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+      }
+
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1,
+              matrix[i][j - 1] + 1,
+              matrix[i - 1][j] + 1
+            );
+          }
+        }
+      }
+
+      return matrix[b.length][a.length];
     }
-  }
 
-  return matrix[b.length][a.length];
-}
+    /**
+     * Safely converts CSV value to number, handling empty strings
+     * @param {string} value - CSV field value
+     * @returns {number|null} Parsed number or null if empty/invalid
+     */
+    function parseNumericField(value) {
+      if (!value || value.trim() === '') return null;
+      const parsed = parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
 
+    // BMI Calculator Event Listener
     document.getElementById('calcBmiBtn').addEventListener('click', () => {
       const weight = parseFloat(document.getElementById('weight').value);
       const height = parseFloat(document.getElementById('height').value);
       const resultBox = document.getElementById('bmiResult');
 
       if (!Number.isFinite(weight) || !Number.isFinite(height) || height <= 0) {
-        resultBox.innerHTML = '<span class="warning">Please enter valid weight and height values.</span>';
+        resultBox.innerHTML = '<span class="warning">⚠️ Please enter valid weight and height values.</span>';
         return;
       }
 
       const bmi = weight / (height * height);
       const category = bmiCategory(bmi);
-      resultBox.innerHTML = `BMI: <strong>${bmi.toFixed(2)}</strong> — <strong>${category}</strong> <span class="pill">Height: ${height.toFixed(2)} m</span>`;
+      resultBox.innerHTML = `<span class="success">✓</span> BMI: <strong>${bmi.toFixed(2)}</strong> — <strong>${category}</strong> <span class="pill">Height: ${height.toFixed(2)} m</span>`;
     });
 
- document.getElementById('calcDoseBtn').addEventListener('click', async () => {
-  const drug = document.getElementById('drugName').value.trim();
-  const weight = parseFloat(document.getElementById('patientWeight').value);
-  const resultBox = document.getElementById('doseResult');
+    // Pediatric Drug Dose Calculator Event Listener
+    document.getElementById('calcDoseBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('calcDoseBtn');
+      const drug = document.getElementById('drugName').value.trim();
+      const weight = parseFloat(document.getElementById('patientWeight').value.trim());
+      const patientName = document.getElementById('patientName').value.trim();
+      const resultBox = document.getElementById('doseResult');
 
-  if (!drug || !Number.isFinite(weight) || weight <= 0) {
-    resultBox.innerHTML = '<span class="warning">Please enter a drug name and a valid weight.</span>';
-    return;
-  }
+      // Validation
+      if (!drug || !Number.isFinite(weight) || weight <= 0) {
+        resultBox.innerHTML = '<span class="warning">⚠️ Please enter a drug name and a valid patient weight (> 0).</span>';
+        return;
+      }
 
-  try {
-    const response = await fetch('./data/drugs_example.csv');
-    if (!response.ok) throw new Error('CSV file not found');
+      // Show loading state
+      btn.disabled = true;
+      const originalText = btn.textContent;
+      btn.textContent = 'Calculating...';
 
-    const text = await response.text();
-    const rows = parseCsv(text);
+      try {
+        const response = await fetch('./data/drugs_example.csv');
+        if (!response.ok) {
+          throw new Error(`CSV file not found (HTTP ${response.status})`);
+        }
 
-    if (rows.length < 2) throw new Error('No drug data available.');
+        const text = await response.text();
+        const rows = parseCsv(text);
 
-    const headers = rows[0];
+        if (rows.length < 2) {
+          throw new Error('No drug data available.');
+        }
 
-    // --- FUZZY MATCHING ---
-    const scored = rows.slice(1)
-      .map((row) => {
-        const obj = toObject(row, headers);
-        const distance = levenshtein(
-          drug.toLowerCase(),
-          obj.Drug.toLowerCase()
-        );
-        return { obj, distance };
-      })
-      .sort((a, b) => a.distance - b.distance);
+        const headers = rows[0];
 
-    const bestMatch = scored[0];
+        // Fuzzy matching: find closest drug name match
+        const scored = rows
+          .slice(1)
+          .map((row) => {
+            const obj = toObject(row, headers);
+            const distance = levenshtein(drug.toLowerCase(), obj.Drug.toLowerCase());
+            return { obj, distance };
+          })
+          .sort((a, b) => a.distance - b.distance);
 
-    if (!bestMatch || bestMatch.distance > 3) {
-      resultBox.innerHTML =
-        '<span class="warning">No close match found. Please check spelling.</span>';
-      return;
+        const bestMatch = scored[0];
+        const FUZZY_THRESHOLD = 3;
+
+        if (!bestMatch || bestMatch.distance > FUZZY_THRESHOLD) {
+          resultBox.innerHTML = '<span class="warning">⚠️ No close match found. Please check spelling. Available drugs may be listed in the CSV file.</span>';
+          return;
+        }
+
+        const chosen = bestMatch.obj;
+
+        // Build warning prefix for close-but-not-perfect matches
+        let prefix = '';
+        if (bestMatch.distance > 1) {
+          prefix = `<span class="warning">Did you mean: <strong>${escapeHtml(chosen.Drug)}</strong>?</span><br><br>`;
+        }
+
+        // Parse numeric fields safely
+        const mgPerKg = parseNumericField(chosen.mg_per_kg);
+        const minPerKg = parseNumericField(chosen.min_mg_per_kg);
+        const maxPerKg = parseNumericField(chosen.max_mg_per_kg);
+        const concentration = parseNumericField(chosen.concentration_mg_per_ml);
+
+        // Build output lines
+        const lines = [];
+        
+        if (patientName) {
+          lines.push(`Patient: <strong>${escapeHtml(patientName)}</strong>`);
+        }
+        
+        lines.push(`Drug: <strong>${escapeHtml(chosen.Drug)}</strong>`);
+        
+        if (mgPerKg !== null) {
+          lines.push(`Dose: <strong>${(mgPerKg * weight).toFixed(2)} mg</strong>`);
+        }
+        
+        if (minPerKg !== null && maxPerKg !== null) {
+          lines.push(`Range: <strong>${(minPerKg * weight).toFixed(2)} – ${(maxPerKg * weight).toFixed(2)} mg</strong>`);
+        }
+        
+        if (concentration !== null && mgPerKg !== null) {
+          lines.push(`Volume: <strong>${((mgPerKg * weight) / concentration).toFixed(2)} mL</strong>`);
+        }
+        
+        if (chosen.frequency) {
+          lines.push(`Frequency: ${escapeHtml(chosen.frequency)}`);
+        }
+        
+        if (chosen.notes) {
+          lines.push(`Notes: ${escapeHtml(chosen.notes)}`);
+        }
+
+        resultBox.innerHTML = prefix + '<span class="success">✓</span> ' + lines.join('<br />');
+
+      } catch (error) {
+        resultBox.innerHTML = `<span class="warning">⚠️ Request failed: ${escapeHtml(error.message)}</span>`;
+      } finally {
+        // Restore button state
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+
+    /**
+     * Escapes HTML special characters to prevent injection
+     * @param {string} text - Text to escape
+     * @returns {string} Escaped text
+     */
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
-
-    const chosen = bestMatch.obj;
-
-    // Optional safety hint for close-but-not-perfect matches
-    let prefix = '';
-    if (bestMatch.distance > 1) {
-      prefix = `<span class="warning">Did you mean: ${chosen.Drug}?</span><br><br>`;
-    }
-
-    const mgPerKg = parseFloat(chosen.mg_per_kg);
-    const minPerKg = chosen.min_mg_per_kg !== '' ? parseFloat(chosen.min_mg_per_kg) : null;
-    const maxPerKg = chosen.max_mg_per_kg !== '' ? parseFloat(chosen.max_mg_per_kg) : null;
-    const concentration = chosen.concentration_mg_per_ml !== '' ? parseFloat(chosen.concentration_mg_per_ml) : null;
-
-    const lines = [
-      `Drug: ${chosen.Drug}`,
-      Number.isFinite(mgPerKg) ? `Dose: ${(mgPerKg * weight).toFixed(2)} mg` : 'Dose: range-based calculation',
-      minPerKg !== null && maxPerKg !== null ? `Range: ${(minPerKg * weight).toFixed(2)} – ${(maxPerKg * weight).toFixed(2)} mg` : '',
-      concentration !== null && Number.isFinite(mgPerKg) ? `Volume: ${((mgPerKg * weight) / concentration).toFixed(2)} mL` : '',
-      chosen.frequency ? `Frequency: ${chosen.frequency}` : '',
-      chosen.notes ? `Notes: ${chosen.notes}` : ''
-    ].filter(Boolean);
-
-    resultBox.innerHTML = prefix + lines.join('<br />');
-
-  } catch (error) {
-    resultBox.innerHTML = `<span class="warning">Request failed: ${error.message}</span>`;
-  }
-});
   </script>
 </body>
 </html>
