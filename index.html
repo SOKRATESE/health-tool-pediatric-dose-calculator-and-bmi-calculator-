@@ -129,6 +129,34 @@
       return Object.fromEntries(headers.map((key, index) => [key.trim(), row[index] ?? '']));
     }
 
+
+    function levenshtein(a, b) {
+  const matrix = [];
+
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
+}
+
     document.getElementById('calcBmiBtn').addEventListener('click', () => {
       const weight = parseFloat(document.getElementById('weight').value);
       const height = parseFloat(document.getElementById('height').value);
@@ -163,9 +191,26 @@
         if (rows.length < 2) throw new Error('No drug data available.');
 
         const headers = rows[0];
-        const matches = rows.slice(1)
-          .map((row) => toObject(row, headers))
-          .filter((row) => row.Drug.toLowerCase().includes(drug.toLowerCase()));
+        const scored = rows.slice(1)
+  .map((row) => {
+    const obj = toObject(row, headers);
+    const distance = levenshtein(
+      drug.toLowerCase(),
+      obj.Drug.toLowerCase()
+    );
+    return { obj, distance };
+  })
+  .sort((a, b) => a.distance - b.distance);
+
+const bestMatch = scored[0];
+
+if (!bestMatch || bestMatch.distance > 3) {
+  resultBox.innerHTML =
+    '<span class="warning">No close match found. Please check spelling.</span>';
+  return;
+}
+
+const chosen = bestMatch.obj;
 
         if (!matches.length) {
           resultBox.innerHTML = '<span class="warning">No matching drug was found in the sample dataset.</span>';
