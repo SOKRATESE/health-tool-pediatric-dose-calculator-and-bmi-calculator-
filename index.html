@@ -245,7 +245,7 @@
       btn.textContent = 'Calculating...';
 
       try {
-        const response = await fetch('./data/drugs_example.csv');
+        const response = await fetch('./drugs_example.csv');
         if (!response.ok) {
           throw new Error(`CSV file not found (HTTP ${response.status})`);
         }
