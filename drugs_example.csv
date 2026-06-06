@@ -2,3 +2,26 @@ Drug,mg_per_kg,min_mg_per_kg,max_mg_per_kg,concentration_mg_per_ml,notes,frequen
 Paracetamol,15,,,24,Analgesic/antipyretic; typical 15 mg/kg per dose,Every 6 hours
 Ibuprofen,10,,,20,NSAID; typical 10 mg/kg per dose,Every 8 hours
 Amoxicillin,20,,,50,Antibiotic; typical 20 mg/kg/day (divide per regimen),Every 12 hours
+Cefuroxime,15,,,30,2nd gen cephalosporin; RTI/UTI infections,Every 12 hours
+Cefixime,8,,,12,3rd gen oral cephalosporin; UTI/typhoid,Every 12–24 hours
+Ceftriaxone,50,,,100,IV/IM broad spectrum; severe infections,Every 24 hours
+Gentamicin,5,4,7,,Aminoglycoside; requires monitoring,Every 24 hours
+Ampicillin,50,,,200,Broad spectrum penicillin; neonatal/sepsis use,Every 6 hours
+Cloxacillin,25,,,100,Penicillinase-resistant; staph infections,Every 6 hours
+
+Azithromycin,10,,,12,Macrolide; respiratory infections,Once daily
+Erythromycin,10,,,50,Macrolide; alternative antibiotic,Every 6 hours
+Metronidazole,7.5,,,30,Anaerobic infections & protozoa,Every 8 hours
+
+Chlorpheniramine,0.1,,,0.3,Antihistamine; allergy symptoms,Every 6–8 hours
+Cetirizine,0.25,,,0.5,Non-sedating antihistamine,Once daily
+
+Salbutamol,0.1,,,0.15,Beta-agonist for bronchospasm (neb/inhaler),Every 4–6 hours
+Dexamethasone,0.15,,,0.6,Corticosteroid; croup/asthma,Every 6–24 hours
+
+Diazepam,0.2,,,0.5,Seizures/status epilepticus,As needed
+Phenobarbital,3,,,5,Anticonvulsant; long-term seizure control,Once or twice daily
+
+Oral Rehydration Solution,,,,"",ORS; for dehydration management,Frequent small sips
+Zinc,10,,,20,Diarrhea adjunct therapy (10–20 mg daily),Once daily
+
