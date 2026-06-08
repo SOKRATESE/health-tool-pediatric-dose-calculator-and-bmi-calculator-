@@ -36,6 +36,31 @@
     .badge { display:inline-block; font-weight:700; color:#153015; background:var(--good); padding:6px 10px; border-radius:999px; font-size:.9rem; }
     .warning { color:#fbbf24; }
     .success { color:var(--good); }
+    .drug-input-wrapper { position:relative; }
+    .drug-suggestions { 
+      position:absolute; 
+      top:100%; 
+      left:0; 
+      right:0; 
+      background:rgba(26,58,26,0.98); 
+      border:1px solid var(--line); 
+      border-top:none; 
+      border-radius:0 0 12px 12px; 
+      max-height:200px; 
+      overflow-y:auto; 
+      z-index:100; 
+      display:none;
+    }
+    .drug-suggestions.active { display:block; }
+    .suggestion-item { 
+      padding:10px 14px; 
+      cursor:pointer; 
+      border-bottom:1px solid rgba(61,125,61,0.5); 
+      transition:background-color .1s ease;
+    }
+    .suggestion-item:last-child { border-bottom:none; }
+    .suggestion-item:hover { background:rgba(45,134,89,0.2); }
+    .suggestion-item.selected { background:rgba(45,134,89,0.4); }
   </style>
 </head>
 <body>
@@ -68,8 +93,11 @@
       <article class="card">
         <h2>Pediatric Drug Dose</h2>
         <p class="muted">Use the sample drug table to estimate a dose for a patient weight.</p>
-        <label for="drugName">Drug name</label>
-        <input id="drugName" type="text" placeholder="Try Paracetamol or Ibuprofen" />
+        <div class="drug-input-wrapper">
+          <label for="drugName">Drug name</label>
+          <input id="drugName" type="text" placeholder="Start typing to find drugs..." autocomplete="off" />
+          <div class="drug-suggestions" id="drugSuggestions"></div>
+        </div>
         <div class="row" style="margin-top:12px;">
           <div>
             <label for="patientWeight">Weight (kg)</label>
@@ -87,15 +115,25 @@
   </main>
 
   <script>
+    // Global variable to store drug data
+    let drugDatabase = [];
+
     /**
      * Determines BMI category based on value
      * @param {number} value - BMI value
      * @returns {string} Category name
      */
     function bmiCategory(value) {
+      // BMI less than 18.5 indicates insufficient weight relative to height
       if (value < 18.5) return 'Underweight';
+      
+      // BMI 18.5–24.9 is considered a healthy, balanced weight
       if (value < 25) return 'Normal weight';
+      
+      // BMI 25–29.9 indicates excess weight but not yet in the obese range
       if (value < 30) return 'Overweight';
+      
+      // BMI 30 and above indicates obesity, associated with increased health risks
       return 'Obese';
     }
 
@@ -208,6 +246,92 @@
       return Number.isFinite(parsed) ? parsed : null;
     }
 
+    /**
+     * Escapes HTML special characters to prevent injection
+     * @param {string} text - Text to escape
+     * @returns {string} Escaped text
+     */
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    /**
+     * Loads drug data from CSV file
+     * Called on page load to populate the drug database
+     */
+    async function loadDrugDatabase() {
+      try {
+        const response = await fetch('./drugs_example.csv');
+        if (!response.ok) {
+          console.warn(`Failed to load drugs CSV: HTTP ${response.status}`);
+          return;
+        }
+
+        const text = await response.text();
+        const rows = parseCsv(text);
+
+        if (rows.length < 2) {
+          console.warn('No drug data available.');
+          return;
+        }
+
+        const headers = rows[0];
+        drugDatabase = rows.slice(1).map(row => toObject(row, headers));
+      } catch (error) {
+        console.warn('Error loading drug database:', error.message);
+      }
+    }
+
+    /**
+     * Updates drug name suggestions based on input
+     * Filters drugs by similarity to input text
+     */
+    function updateDrugSuggestions() {
+      const input = document.getElementById('drugName').value.trim().toLowerCase();
+      const suggestionsBox = document.getElementById('drugSuggestions');
+
+      if (input.length === 0) {
+        suggestionsBox.classList.remove('active');
+        return;
+      }
+
+      // Score drugs based on how well they match the input
+      const scored = drugDatabase
+        .map(drug => ({
+          name: drug.Drug,
+          distance: levenshtein(input, drug.Drug.toLowerCase())
+        }))
+        .filter(item => item.distance <= 5) // Only show reasonable matches
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 8); // Show top 8 suggestions
+
+      if (scored.length === 0) {
+        suggestionsBox.classList.remove('active');
+        return;
+      }
+
+      // Build HTML for suggestions
+      suggestionsBox.innerHTML = scored
+        .map((item, index) => `
+          <div class="suggestion-item" data-drug-name="${escapeHtml(item.name)}">
+            ${escapeHtml(item.name)}
+          </div>
+        `)
+        .join('');
+
+      // Add click handlers to suggestions
+      suggestionsBox.querySelectorAll('.suggestion-item').forEach(item => {
+        item.addEventListener('click', () => {
+          document.getElementById('drugName').value = item.dataset.drugName;
+          suggestionsBox.classList.remove('active');
+        });
+      });
+
+      suggestionsBox.classList.add('active');
+    }
+
     // BMI Calculator Event Listener
     document.getElementById('calcBmiBtn').addEventListener('click', () => {
       const weight = parseFloat(document.getElementById('weight').value);
@@ -222,6 +346,19 @@
       const bmi = weight / (height * height);
       const category = bmiCategory(bmi);
       resultBox.innerHTML = `<span class="success">✓</span> BMI: <strong>${bmi.toFixed(2)}</strong> — <strong>${category}</strong> <span class="pill">Height: ${height.toFixed(2)} m</span>`;
+    });
+
+    // Drug name input with predictive suggestions
+    document.getElementById('drugName').addEventListener('input', updateDrugSuggestions);
+
+    // Close suggestions when clicking outside
+    document.addEventListener('click', (event) => {
+      const drugInput = document.getElementById('drugName');
+      const suggestionsBox = document.getElementById('drugSuggestions');
+      
+      if (!event.target.closest('.drug-input-wrapper')) {
+        suggestionsBox.classList.remove('active');
+      }
     });
 
     // Pediatric Drug Dose Calculator Event Listener
@@ -244,25 +381,28 @@
       btn.textContent = 'Calculating...';
 
       try {
-        const response = await fetch('./drugs_example.csv');
-        if (!response.ok) {
-          throw new Error(`CSV file not found (HTTP ${response.status})`);
+        // Use cached drug database if available, otherwise fetch
+        let drugs = drugDatabase;
+        if (drugs.length === 0) {
+          const response = await fetch('./drugs_example.csv');
+          if (!response.ok) {
+            throw new Error(`CSV file not found (HTTP ${response.status})`);
+          }
+
+          const text = await response.text();
+          const rows = parseCsv(text);
+
+          if (rows.length < 2) {
+            throw new Error('No drug data available.');
+          }
+
+          const headers = rows[0];
+          drugs = rows.slice(1).map(row => toObject(row, headers));
         }
-
-        const text = await response.text();
-        const rows = parseCsv(text);
-
-        if (rows.length < 2) {
-          throw new Error('No drug data available.');
-        }
-
-        const headers = rows[0];
 
         // Fuzzy matching: find closest drug name match
-        const scored = rows
-          .slice(1)
-          .map((row) => {
-            const obj = toObject(row, headers);
+        const scored = drugs
+          .map((obj) => {
             const distance = levenshtein(drug.toLowerCase(), obj.Drug.toLowerCase());
             return { obj, distance };
           })
@@ -330,16 +470,8 @@
       }
     });
 
-    /**
-     * Escapes HTML special characters to prevent injection
-     * @param {string} text - Text to escape
-     * @returns {string} Escaped text
-     */
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
+    // Load drug database on page load
+    loadDrugDatabase();
   </script>
 </body>
 </html>
