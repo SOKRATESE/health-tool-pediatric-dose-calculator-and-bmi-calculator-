@@ -30,7 +30,7 @@
     input, button { width:100%; border-radius:12px; border:1px solid var(--line); background:#0f1419; color:var(--text-primary); padding:12px 14px; font-size:1rem; }
     input::placeholder { color:rgba(168,179,193,0.5); }
     input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 8px rgba(0,212,255,0.2); }
-    button { cursor:pointer; background:linear-gradient(135deg,var(--accent-dark),var(--accent)); color:#000; border:0; font-weight:700; transition:transform .08s ease, opacity .2s ease, box-shado[...]
+    button { cursor:pointer; background:linear-gradient(135deg,var(--accent-dark),var(--accent)); color:#000; border:0; font-weight:700; transition:transform .08s ease, opacity .2s ease, box-shado[...] }
     button:hover { transform:translateY(-1px); box-shadow:0 8px 16px rgba(0,212,255,0.3); }
     button:disabled { opacity:0.6; cursor:not-allowed; }
     .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -356,7 +356,7 @@
 
       const bmi = weight / (height * height);
       const category = bmiCategory(bmi);
-      resultBox.innerHTML = `<span class="success">✓</span> BMI: <strong>${bmi.toFixed(2)}</strong> — <strong>${category}</strong> <span class="pill">Height: ${height.toFixed(2)} m</span>`;
+      resultBox.innerHTML = `<span class="success">✓</span> BMI: <strong>${bmi.toFixed(2)}</strong> — <strong>${category}</strong>`;
     });
 
     // Drug name input with predictive suggestions
